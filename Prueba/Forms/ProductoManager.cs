@@ -14,11 +14,13 @@ namespace Prueba.Forms
 {
     public partial class ProductoManager : Form
     {
+        public static ProductoManager productoManager;
         private TextBox[] textBoxes;
         public ProductoManager()
         {
             InitializeComponent();
             textBoxes = new TextBox[] { textBox1, textBox2, textBox3};
+            productoManager = this;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -58,8 +60,7 @@ namespace Prueba.Forms
 
             ThreadPool.QueueUserWorkItem(delegate (object item)
             {
-                while (true)
-                {
+
                     dataGridView1.Rows.Clear();
                     foreach (ProductoVenta productoventa in listProductos)
                     {
@@ -76,10 +77,6 @@ namespace Prueba.Forms
                         preciototal += productoventa.precio * productoventa.ventas;
                     }
                     label5.Text = String.Format("Ganancia Total: {0}$", preciototal);
-                    
-
-                    Thread.Sleep(3000);
-                }
                 
             });
         }

@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Database\DatabaseManager.cs" />
+    <Compile Include="Exceptions\Custom.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

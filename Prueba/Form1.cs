@@ -1,4 +1,5 @@
-﻿using Prueba.Database;
+﻿using ProductosManager.Exceptions;
+using Prueba.Database;
 using Prueba.Forms;
 using Prueba.Models;
 using System;
@@ -91,6 +92,8 @@ namespace Prueba
             try
             {
                 Producto producto = database.Buscar(x => x.nombre == nombretemp)[0];
+
+                if (producto.stock <= 0) Custom.TestThrow();
                 producto.stock--;
                 database.Actualizar(x => x.nombre == nombretemp, producto);
                 
@@ -115,19 +118,30 @@ namespace Prueba
                     };
                     databaseVentas.Insertar(productoVenta);
                 }
+                finally
+                {
+                    ProductoManager.productoManager.UpdateTable(databaseVentas.getData());
+                }
                 UpdateTable(database.getData());
             }
-            catch (Exception)
+            catch(ArgumentException)
             {
-
-                MessageBox.Show("No Has Seleccionado Ningun Producto");
+                MessageBox.Show("No Has Seleccionado Ningun Producto", "No Has Seleccionado Producto", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch(Custom)
+            {
+                MessageBox.Show("Ya te quedaste sin Stock. No Puedes Vender Mas :(", "Sin Stock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-            var lista = database.Buscar(x => x.nombre.Contains(textBox1.Text)); UpdateTable(lista);
+            ThreadPool.QueueUserWorkItem(delegate (object item)
+            {
+                var lista = database.Buscar(x => x.nombre.Contains(textBox1.Text)); UpdateTable(lista);
+            });
+            
         }
 
         private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -143,8 +157,7 @@ namespace Prueba
 
         private void button3_Click(object sender, EventArgs e)
         {
-           
-            productoManager.Show();
+            MessageBox.Show("Este Boton No Tiene Ninguna Funcionalidad :(");
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
