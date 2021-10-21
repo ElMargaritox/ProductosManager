@@ -22,12 +22,19 @@ namespace Prueba
         public DatabaseManager<Producto> database = new DatabaseManager<Producto>($"{Environment.CurrentDirectory}/database.json");
         public DatabaseManager<ProductoVenta> databaseVentas = new DatabaseManager<ProductoVenta>($"{Environment.CurrentDirectory}/databaseVentas.json");
         private String nombretemp;
+        private Boolean stop;
+
+        private Thread updateTableThread;
+
+
+
         public Form1()
         {
             InitializeComponent();
             form1 = this;
             nombretemp = string.Empty;
-            
+            stop = false;
+
         }
 
         public void UpdateTable(List<Producto> listProductos)
@@ -43,11 +50,6 @@ namespace Prueba
                     fila.Cells.Add(new DataGridViewTextBoxCell() { Value = producto.precio });
                     dataGridView1.Rows.Add(fila);
                 }
-            });
-
-
-            ThreadPool.QueueUserWorkItem(delegate (object item2)
-            {
 
                 float preciototal = 0;
                 foreach (Producto producto in listProductos)
@@ -60,6 +62,7 @@ namespace Prueba
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            
             database.Cargar();
             databaseVentas.Cargar();
             UpdateTable(database.getData());
@@ -77,6 +80,7 @@ namespace Prueba
                 producto.stock++;
                 database.Actualizar(x => x.nombre == nombretemp, producto);
                 UpdateTable(database.getData());
+                
             }
             catch (Exception)
             {
@@ -89,49 +93,60 @@ namespace Prueba
         private void button2_Click(object sender, EventArgs e)
         {
 
-            try
-            {
-                Producto producto = database.Buscar(x => x.nombre == nombretemp)[0];
+            if (stop) { MessageBox.Show("Espera Unos Momentos"); return; }
 
-                if (producto.stock <= 0) Custom.TestThrow();
-                producto.stock--;
-                database.Actualizar(x => x.nombre == nombretemp, producto);
-                
+            
+                try
+                {
+                    stop = true;
+                    this.Text = stop.ToString();
+                    Producto producto = database.Buscar(x => x.nombre == nombretemp)[0];
+
+                    if (producto.stock <= 0) Custom.TestThrow();
+                    producto.stock--;
+                    database.Actualizar(x => x.nombre == nombretemp, producto);
+
 
 
                 // VENTA
 
-                try
-                {
-                    ProductoVenta productoVenta = databaseVentas.Buscar(x => x.nombre == producto.nombre)[0];
-
-                    productoVenta.ventas++;
-                    databaseVentas.Actualizar(x => x.nombre == producto.nombre, productoVenta);
-                }
-                catch
-                {
-                    ProductoVenta productoVenta = new ProductoVenta
+                    try
                     {
-                        nombre = producto.nombre,
-                        precio = producto.precio,
-                        ventas = 1
-                    };
-                    databaseVentas.Insertar(productoVenta);
+                        ProductoVenta productoVenta = new ProductoVenta
+                        {
+                            nombre = producto.nombre,
+                            precio = producto.precio,
+                            ventas = 1,
+                            fecha = DateTime.Now
+                        };
+                        databaseVentas.Insertar(productoVenta);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Error", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        ProductoManager.productoManager.UpdateTable(databaseVentas.getData());
+                        stop = false;
+                    }
+                    UpdateTable(database.getData());
+                    stop = false;
+                    this.Text = stop.ToString();
                 }
-                finally
+                catch (ArgumentException)
                 {
-                    ProductoManager.productoManager.UpdateTable(databaseVentas.getData());
+                    
+                    MessageBox.Show("No Has Seleccionado Ningun Producto", "No Has Seleccionado Producto", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    stop = false;
                 }
-                UpdateTable(database.getData());
-            }
-            catch(ArgumentException)
-            {
-                MessageBox.Show("No Has Seleccionado Ningun Producto", "No Has Seleccionado Producto", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch(Custom)
-            {
-                MessageBox.Show("Ya te quedaste sin Stock. No Puedes Vender Mas :(", "Sin Stock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+                catch (Custom)
+                {
+                    
+                    MessageBox.Show("Ya te quedaste sin Stock. No Puedes Vender Mas :(", "Sin Stock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    stop = false;
+                }
+            
 
         }
 

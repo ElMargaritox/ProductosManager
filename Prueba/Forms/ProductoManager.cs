@@ -16,11 +16,14 @@ namespace Prueba.Forms
     {
         public static ProductoManager productoManager;
         private TextBox[] textBoxes;
+        public string productoSeleccionado;
+        public DateTime datetime;
         public ProductoManager()
         {
             InitializeComponent();
             textBoxes = new TextBox[] { textBox1, textBox2, textBox3};
             productoManager = this;
+            productoSeleccionado = string.Empty;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -58,17 +61,18 @@ namespace Prueba.Forms
         public void UpdateTable(List<ProductoVenta> listProductos)
         {
 
-            ThreadPool.QueueUserWorkItem(delegate (object item)
-            {
 
                     dataGridView1.Rows.Clear();
                     foreach (ProductoVenta productoventa in listProductos)
                     {
                         DataGridViewRow fila = new DataGridViewRow();
                         fila.Cells.Add(new DataGridViewTextBoxCell() { Value = productoventa.ventas });
+                        fila.Cells.Add(new DataGridViewTextBoxCell() { Value = productoventa.fecha });
                         fila.Cells.Add(new DataGridViewTextBoxCell() { Value = productoventa.nombre });
-                        fila.Cells.Add(new DataGridViewTextBoxCell() { Value = productoventa.precio });
+                        fila.Cells.Add(new DataGridViewTextBoxCell() { Value = productoventa.precio + "$"});
+                        
                         dataGridView1.Rows.Add(fila);
+                   
                     }
 
                     float preciototal = 0;
@@ -78,18 +82,66 @@ namespace Prueba.Forms
                     }
                     label5.Text = String.Format("Ganancia Total: {0}$", preciototal);
                 
-            });
         }
 
         private void ProductoManager_Load(object sender, EventArgs e)
+        {
+            Thread thread = new Thread(new ThreadStart(wtf));
+            thread.Start();
+        }
+
+        private void wtf()
         {
             UpdateTable(Form1.form1.databaseVentas.getData());
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Form1.form1.database.Eliminar(x => x.nombre == textBox2.Text);
+            try
+            {
+                var opcion = MessageBox.Show(String.Format("¿Deseas Eliminar {0}?", productoSeleccionado), "Advertencia", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (opcion.ToString() == "Yes")
+                {
+                    Form1.form1.databaseVentas.Eliminar(x => x.fecha == datetime);
+
+                }
+            }
+            catch
+            {
+                MessageBox.Show("No Se Ha Seleccionado Ningun Producto");
+            }
+            
             Form1.form1.UpdateTable(Form1.form1.database.getData());
+            this.UpdateTable(Form1.form1.databaseVentas.getData());
+        }
+
+        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            productoSeleccionado = dataGridView1.CurrentRow.Cells[2].Value.ToString();
+            datetime = (DateTime)dataGridView1.CurrentRow.Cells[1].Value;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var opcion = MessageBox.Show(String.Format("¿Deseas Eliminar Todos Los Productos: {0}?", productoSeleccionado), "Advertencia", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (opcion.ToString() == "Yes")
+                {
+                    var datos = Form1.form1.databaseVentas.Buscar(x => x.nombre == productoSeleccionado);
+                    foreach (var item in datos) Form1.form1.databaseVentas.Eliminar(x => x.nombre == productoSeleccionado);
+                }
+            }
+            catch
+            {
+                MessageBox.Show("No Se Ha Seleccionado Ningun Producto");
+            }
+
+            Form1.form1.UpdateTable(Form1.form1.database.getData());
+            this.UpdateTable(Form1.form1.databaseVentas.getData());
         }
     }
 }
+ 

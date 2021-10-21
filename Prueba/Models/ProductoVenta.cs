@@ -11,5 +11,7 @@ namespace Prueba.Models
         public int ventas;
         public string nombre;
         public float precio;
+        public DateTime fecha;
+
     }
 }

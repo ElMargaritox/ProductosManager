@@ -34,10 +34,6 @@ namespace Prueba.Database
 
             Guardar();
         }
-        internal void Insertar(object producto)
-        {
-            throw new NotImplementedException();
-        }
 
         public List<T> getData()
         {
